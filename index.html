@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kalkulator vrednosti automobila</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 10px;
+      color: #f2f2f2;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #29302B;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 22px; margin-bottom: 5px; }
+    .header p { font-size: 14px; opacity: 0.9; }
+    .content { padding: 25px; }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block; font-size: 15px; font-weight: 600; color: #f2f2f2;
+      margin-bottom: 8px;
+    }
+    input[type="number"], select {
+      width: 100%; padding: 14px; border: 2px solid #444; background: #1e1e1e; color: #f2f2f2;
+      border-radius: 8px; font-size: 16px;
+    }
+    input[type="number"]:focus, select:focus {
+      outline: none; border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+    }
+    .button-group {
+      margin-top: 30px;
+    }
+    button {
+      width: 100%; padding: 16px; border: none; border-radius: 8px;
+      background: #007bff; color: white; font-size: 17px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s;
+    }
+    button:active { transform: scale(0.98); }
+    .results {
+      display: none; margin-top: 30px; padding: 20px;
+      background: #1e1e1e; border-radius: 8px; border-left: 4px solid #667eea;
+    }
+    .results.show { display: block; }
+    .results h3 { color: #f2f2f2; margin-bottom: 15px; font-size: 18px; }
+    .result-item {
+      margin-bottom: 15px; padding: 12px; background: #222; border-radius: 8px;
+    }
+    .result-label { font-size: 14px; color: #aaa; }
+    .result-value { font-size: 22px; font-weight: bold; color: #667eea; }
+    .error {
+      display: none; padding: 15px; background: #400; border: 2px solid #600;
+      border-radius: 8px; color: #fcc; margin-bottom: 20px; font-size: 14px;
+    }
+    .error.show { display: block; }
+
+    @media (max-width: 480px) {
+      .header h1 { font-size: 20px; }
+      .content { padding: 20px; }
+      button { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Kalkulator vrednosti automobila</h1>
+      <p>Procenite trenutnu vrednost polovnog vozila</p>
+    </div>
+
+    <div class="content">
+      <div class="error" id="error-message"></div>
+
+      <form id="calculator-form">
+        <div class="form-group">
+          <label for="novaCena">Cena novog automobila u toj klasi (EUR):</label>
+          <input type="number" id="novaCena" value="20000" min="1000" step="500">
+        </div>
+
+        <div class="form-group">
+          <label for="godine">Godine starosti:</label>
+          <select id="godine">
+            <script>
+              for(let i=1; i<=20; i++) document.write(`<option value="${i}" ${i===7?'selected':''}>${i} ${i===1?'godina':'godine'}</option>`);
+            </script>
+          </select>
+        </div>
+
+        <div class="form-group">
+  <label for="kilometraza">Pređena kilometraža (km):</label>
+  <select id="kilometraza">
+    <option value="50000" selected>Do 50,000 km</option>
+    <option value="100000">Do 100,000 km</option>
+    <option value="150000">Do 150,000 km</option>
+    <option value="200000">Do 200,000 km</option>
+    <option value="250000">Do 250,000 km</option>
+    <option value="400000">Do 400,000 km</option>
+  </select>
+</div>
+
+        <div class="form-group">
+          <label for="servis">Servisna knjižica:</label>
+          <select id="servis">
+            <option value="Da" selected>Da</option>
+            <option value="Ne">Ne</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="pogon">Pogon na sva 4 točka:</label>
+          <select id="pogon">
+            <option value="Da" selected>Da</option>
+            <option value="Ne">Ne</option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button type="button" onclick="calculate()">Izračunaj vrednost</button>
+        </div>
+      </form>
+
+      <div class="results" id="results">
+        <h3>Rezultat</h3>
+        <div class="result-item">
+          <div class="result-label">Trenutna vrednost automobila</div>
+          <div class="result-value"><span id="vrednost">0</span> €</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Gubitak vrednosti</div>
+          <div class="result-value"><span id="gubitak">0</span> €</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function calculate() {
+      try {
+        const inputs = {
+  novaCena: parseFloat(document.getElementById('novaCena').value) || 0,
+  godine: parseInt(document.getElementById('godine').value),
+  kilometraza: parseInt(document.getElementById('kilometraza').value),  // ← OVO SAM PROMENIO
+  servis: document.getElementById('servis').value,
+  pogon: document.getElementById('pogon').value
+};
+
+        if (inputs.novaCena < 1000) throw new Error('Cena mora biti veća od 1000€');
+        if (inputs.kilometraza < 0) throw new Error('Kilometraža ne može biti negativna');
+
+        document.getElementById('error-message').classList.remove('show');
+
+        const res = await fetch('/.netlify/functions/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(inputs)
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        document.getElementById('vrednost').textContent = Math.round(data.vrednost).toLocaleString();
+        document.getElementById('gubitak').textContent = Math.round(data.gubitak).toLocaleString();
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.classList.add('show');
+        resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      } catch (error) {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = error.message;
+        errorDiv.classList.add('show');
+      }
+    }
+  </script>
+</body>
+</html>
